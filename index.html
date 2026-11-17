@@ -1,0 +1,1016 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Chopsticks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Work+Sans:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #241B2F;
+    --panel: #322740;
+    --panel-edge: #443655;
+    --ink: #F4EDE4;
+    --ink-dim: #B8AEC2;
+    --p1: #E8A33D;
+    --p1-dim: #6b532a;
+    --p2: #5FB49C;
+    --p2-dim: #325044;
+    --dead: #B8455C;
+    --dead-dim: #4a2530;
+  }
+  *{ box-sizing: border-box; }
+  html,body{
+    margin:0; padding:0; min-height:100vh;
+    background: radial-gradient(circle at 20% 0%, #2c2138 0%, var(--bg) 55%);
+    color: var(--ink);
+    font-family: 'Work Sans', sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .wrap{
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 28px 18px 60px;
+  }
+  header{
+    text-align:center;
+    margin-bottom: 18px;
+  }
+  h1{
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    font-size: clamp(2.2rem, 7vw, 3rem);
+    margin: 0;
+    letter-spacing: -0.01em;
+    background: linear-gradient(90deg, var(--p1), var(--p2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .tagline{
+    color: var(--ink-dim);
+    font-size: 0.9rem;
+    margin-top: 4px;
+    letter-spacing: 0.02em;
+  }
+  .status-bar{
+    text-align:center;
+    background: var(--panel);
+    border: 1px solid var(--panel-edge);
+    border-radius: 14px;
+    padding: 12px 16px;
+    margin-bottom: 22px;
+    font-size: 0.98rem;
+    min-height: 24px;
+    font-weight: 500;
+  }
+  .control-row{
+    display:flex;
+    flex-wrap: wrap;
+    align-items:center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+  .control-label{
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-dim);
+    margin-right: 10px;
+  }
+  .difficulty-group{
+    display:flex;
+    align-items:center;
+  }
+  .segmented{
+    display:inline-flex;
+    background: var(--panel);
+    border: 1px solid var(--panel-edge);
+    border-radius: 999px;
+    padding: 3px;
+  }
+  .seg-btn{
+    font-family: 'Work Sans', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 999px;
+    border: none;
+    background: transparent;
+    color: var(--ink-dim);
+    cursor: pointer;
+    transition: background .2s ease, color .2s ease;
+  }
+  .seg-btn:hover{ color: var(--ink); }
+  .seg-btn.active{
+    background: linear-gradient(90deg, var(--p1), var(--p2));
+    color: #1a1420;
+  }
+  .scoreboard{
+    display:flex;
+    align-items:center;
+    gap: 14px;
+    font-size: 0.82rem;
+    color: var(--ink-dim);
+  }
+  .score-item{
+    display:flex;
+    align-items:center;
+    gap: 6px;
+  }
+  .score-item b{
+    color: var(--ink);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+  }
+  .score-dot{
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--dc, var(--ink));
+    display:inline-block;
+  }
+  .btn-reset-tally{
+    font-family: 'Work Sans', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 6px 12px;
+    border-radius: 999px;
+    border: 1px solid var(--panel-edge);
+    background: transparent;
+    color: var(--ink-dim);
+    cursor: pointer;
+    transition: color .2s ease, border-color .2s ease;
+  }
+  .btn-reset-tally:hover{
+    color: var(--ink);
+    border-color: var(--ink-dim);
+  }
+  .status-bar .accent{
+    font-weight: 600;
+  }
+  .board{
+    display:flex;
+    flex-direction: column;
+    gap: 22px;
+  }
+  .side{
+    border-radius: 20px;
+    padding: 18px;
+    background: var(--panel);
+    border: 1px solid var(--panel-edge);
+    transition: box-shadow .25s ease, border-color .25s ease;
+    position: relative;
+  }
+  .side.active-turn{
+    box-shadow: 0 0 0 2px var(--turn-color, var(--p1)), 0 8px 24px -8px var(--turn-color, var(--p1));
+  }
+  .side-label{
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+  .side-label .name{
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 1.15rem;
+  }
+  .side.human .name{ color: var(--p1); }
+  .side.ai .name{ color: var(--p2); }
+  .side-label .badge{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: rgba(255,255,255,0.06);
+    color: var(--ink-dim);
+    letter-spacing: 0.05em;
+  }
+  .hands{
+    display:flex;
+    gap: 16px;
+  }
+  .hand{
+    flex: 1;
+    background: #1d1526;
+    border-radius: 16px;
+    padding: 16px 10px 12px;
+    text-align:center;
+    cursor: default;
+    position: relative;
+    overflow: hidden;
+    border: 2px solid transparent;
+    transition: transform .18s ease, border-color .18s ease, background .3s ease;
+  }
+  .hand::before{
+    content:'';
+    position:absolute;
+    inset:0;
+    background:
+      radial-gradient(circle at 50% 30%, currentColor 0.5px, transparent 0.5px);
+    background-size: 10px 10px;
+    opacity: 0.05;
+    color: var(--ink);
+    pointer-events:none;
+  }
+  .hand.selectable{
+    cursor: pointer;
+  }
+  .hand.selectable:hover{
+    transform: translateY(-2px);
+  }
+  .hand.attacker-selected{
+    border-color: var(--p1);
+    background: #2b1f1a;
+  }
+  .hand.attacker-selected-ai{
+    border-color: var(--p2);
+    background: #16241f;
+    animation: attacker-pulse 1s ease-in-out infinite;
+  }
+  @keyframes attacker-pulse{
+    0%,100%{ box-shadow: 0 0 0 0 rgba(95,180,156,0.35); }
+    50%{ box-shadow: 0 0 0 8px rgba(95,180,156,0); }
+  }
+  .hand.valid-target{
+    border-color: var(--p2);
+    box-shadow: 0 0 0 3px rgba(95,180,156,0.15);
+  }
+  .hand.valid-target:hover{
+    background: #1a2d27;
+  }
+  .hand.target-flash{
+    animation: target-flash 0.7s ease;
+  }
+  @keyframes target-flash{
+    0%{ box-shadow: 0 0 0 0 rgba(232,163,61,0.7); border-color: var(--p1); }
+    60%{ box-shadow: 0 0 0 14px rgba(232,163,61,0); border-color: var(--p1); }
+    100%{ box-shadow: 0 0 0 0 rgba(232,163,61,0); border-color: transparent; }
+  }
+  .hand-label{
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-dim);
+    margin-bottom: 10px;
+  }
+  .dots{
+    display:flex;
+    justify-content:center;
+    align-items:flex-end;
+    gap: 6px;
+    height: 34px;
+    margin-bottom: 6px;
+  }
+  .dot{
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: var(--dot-color, var(--ink));
+    box-shadow: 0 0 0 2px rgba(0,0,0,0.25) inset;
+    animation: pop .25s ease;
+  }
+  @keyframes pop{
+    from{ transform: scale(0.4); opacity: 0; }
+    to{ transform: scale(1); opacity: 1; }
+  }
+  .count-label{
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--ink-dim);
+  }
+  .hand.dead{
+    background: var(--dead-dim);
+  }
+  .hand.dead .dots{ display:none; }
+  .hand.dead .count-label{ display:none; }
+  .out-stamp{
+    display:none;
+    font-family: 'Fraunces', serif;
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: var(--dead);
+    letter-spacing: 0.05em;
+    transform: rotate(-6deg);
+    border: 2px solid var(--dead);
+    border-radius: 8px;
+    padding: 2px 10px;
+    margin-top: 6px;
+  }
+  .hand.dead .out-stamp{ display:inline-block; }
+
+  .actions{
+    display:flex;
+    justify-content:center;
+    margin-top: 22px;
+    min-height: 44px;
+  }
+  button{
+    font-family: 'Work Sans', sans-serif;
+    font-weight: 600;
+    font-size: 0.92rem;
+    padding: 11px 22px;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    transition: transform .15s ease, filter .15s ease;
+  }
+  button:hover{ filter: brightness(1.1); transform: translateY(-1px); }
+  button:active{ transform: translateY(0); }
+  .btn-split{
+    background: var(--p1);
+    color: #241B2F;
+  }
+  .btn-cancel{
+    background: transparent;
+    color: var(--ink-dim);
+    border: 1px solid var(--panel-edge);
+    margin-left: 10px;
+  }
+  .btn-new{
+    background: linear-gradient(90deg, var(--p1), var(--p2));
+    color: #1a1420;
+  }
+
+  .overlay{
+    position: fixed;
+    inset: 0;
+    background: rgba(20,15,26,0.86);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    opacity:0;
+    pointer-events:none;
+    transition: opacity .3s ease;
+    z-index: 10;
+  }
+  .overlay.show{
+    opacity:1;
+    pointer-events:auto;
+  }
+  .overlay-card{
+    background: var(--panel);
+    border: 1px solid var(--panel-edge);
+    border-radius: 22px;
+    padding: 38px 32px;
+    text-align:center;
+    max-width: 340px;
+  }
+  .overlay-card h2{
+    font-family:'Fraunces', serif;
+    font-size: 1.8rem;
+    margin: 0 0 8px;
+  }
+  .overlay-card p{
+    color: var(--ink-dim);
+    margin: 0 0 20px;
+    font-size: 0.92rem;
+  }
+  .rules{
+    margin-top: 34px;
+    background: var(--panel);
+    border: 1px solid var(--panel-edge);
+    border-radius: 16px;
+    padding: 16px 20px;
+    font-size: 0.85rem;
+    color: var(--ink-dim);
+    line-height: 1.6;
+  }
+  .rules summary{
+    cursor:pointer;
+    font-weight: 600;
+    color: var(--ink);
+    font-family: 'Fraunces', serif;
+  }
+  .rules ul{ padding-left: 20px; margin: 10px 0 0;}
+
+  .vs-divider{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color: var(--ink-dim);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+  }
+  .vs-divider::before,
+  .vs-divider::after{
+    content:'';
+    flex:1;
+    height:1px;
+    background: var(--panel-edge);
+  }
+  .vs-divider span{ padding: 0 12px; }
+
+  @media (min-width: 640px){
+    .side{ padding: 22px 26px; }
+  }
+
+  @keyframes shake{
+    0%,100%{ transform: translateX(0); }
+    25%{ transform: translateX(-4px); }
+    75%{ transform: translateX(4px); }
+  }
+  .shake{ animation: shake .3s ease; }
+
+  .attack-arrow{
+    animation: dash-march 0.6s linear infinite;
+  }
+  @keyframes dash-march{
+    to{ stroke-dashoffset: -15; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>Chopsticks</h1>
+    <div class="tagline">tap fingers, take hands, win the count</div>
+  </header>
+
+  <div class="control-row">
+    <div class="difficulty-group" role="group" aria-label="Computer difficulty">
+      <span class="control-label">Difficulty</span>
+      <div class="segmented" id="difficultySegmented">
+        <button type="button" class="seg-btn" data-difficulty="easy">Easy</button>
+        <button type="button" class="seg-btn active" data-difficulty="medium">Medium</button>
+        <button type="button" class="seg-btn" data-difficulty="hard">Hard</button>
+      </div>
+    </div>
+    <div class="scoreboard">
+      <span class="score-item"><span class="score-dot" style="--dc: var(--p1)"></span>Wins <b id="winCount">0</b></span>
+      <span class="score-item"><span class="score-dot" style="--dc: var(--p2)"></span>Losses <b id="lossCount">0</b></span>
+      <button type="button" class="btn-reset-tally" id="resetTallyBtn" title="Reset the win/loss tally">Reset tally</button>
+    </div>
+  </div>
+
+  <div class="status-bar" id="statusBar">Your move — tap one of your hands to attack with.</div>
+
+  <div class="board">
+    <div class="side ai" id="aiSide">
+      <div class="side-label">
+        <span class="name">Computer</span>
+        <span class="badge">CPU</span>
+      </div>
+      <div class="hands">
+        <div class="hand" id="ai-0" data-owner="ai" data-idx="0">
+          <div class="hand-label">Left</div>
+          <div class="dots"></div>
+          <div class="count-label"></div>
+          <div class="out-stamp">OUT</div>
+        </div>
+        <div class="hand" id="ai-1" data-owner="ai" data-idx="1">
+          <div class="hand-label">Right</div>
+          <div class="dots"></div>
+          <div class="count-label"></div>
+          <div class="out-stamp">OUT</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="vs-divider" aria-hidden="true"><span>vs</span></div>
+
+    <div class="side human" id="humanSide">
+      <div class="side-label">
+        <span class="name">You</span>
+        <span class="badge">PLAYER</span>
+      </div>
+      <div class="hands">
+        <div class="hand" id="human-0" data-owner="human" data-idx="0">
+          <div class="hand-label">Left</div>
+          <div class="dots"></div>
+          <div class="count-label"></div>
+          <div class="out-stamp">OUT</div>
+        </div>
+        <div class="hand" id="human-1" data-owner="human" data-idx="1">
+          <div class="hand-label">Right</div>
+          <div class="dots"></div>
+          <div class="count-label"></div>
+          <div class="out-stamp">OUT</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="actions" id="actions"></div>
+
+  <details class="rules">
+    <summary>How to play</summary>
+    <ul>
+      <li>Each hand starts with 1 finger. On your turn, tap one of your hands, then tap any other hand (yours or the computer's) to add your hand's finger count to it.</li>
+      <li>If a hand reaches 5 or more fingers, it's knocked out and can't be used or targeted.</li>
+      <li>If you have only one hand left and it holds an even number of fingers, you can split it in half between both hands instead of attacking, bringing your dead hand back.</li>
+      <li>Knock out both of the opponent's hands to win.</li>
+    </ul>
+  </details>
+</div>
+
+<svg id="arrowLayer" style="position:fixed; top:0; left:0; pointer-events:none; z-index:6;">
+  <defs>
+    <marker id="arrowhead-ai" markerWidth="9" markerHeight="9" refX="6" refY="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8 Z" fill="rgba(180,178,190,0.65)"></path>
+    </marker>
+    <marker id="arrowhead-human" markerWidth="9" markerHeight="9" refX="6" refY="4" orient="auto">
+      <path d="M0,0 L8,4 L0,8 Z" fill="rgba(180,178,190,0.65)"></path>
+    </marker>
+  </defs>
+  <g id="arrowGroup"></g>
+</svg>
+
+<div class="overlay" id="overlay">
+  <div class="overlay-card">
+    <h2 id="overlayTitle">You win!</h2>
+    <p id="overlaySub">Both of the computer's hands are out.</p>
+    <button class="btn-new" id="playAgainBtn">Play again</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  const HUMAN = 'human', AI = 'ai';
+
+  let state = { human: [1,1], ai: [1,1] };
+  let turn = HUMAN;
+  let selectedAttacker = null; // index of human's attacking hand, or null
+  let gameOver = false;
+  let inputLocked = false;
+  let difficulty = 'medium';
+  let wins = 0;
+  let losses = 0;
+
+  const DIFFICULTY_CONFIG = {
+    easy:   { depth: 1, randomChance: 0.40 },
+    medium: { depth: 4, randomChance: 0.12 },
+    hard:   { depth: 8, randomChance: 0 }
+  };
+
+  const winCountEl = document.getElementById('winCount');
+  const lossCountEl = document.getElementById('lossCount');
+  const resetTallyBtn = document.getElementById('resetTallyBtn');
+  const difficultySegmented = document.getElementById('difficultySegmented');
+
+  const statusBar = document.getElementById('statusBar');
+  const humanSide = document.getElementById('humanSide');
+  const aiSide = document.getElementById('aiSide');
+  const actionsEl = document.getElementById('actions');
+  const overlay = document.getElementById('overlay');
+  const overlayTitle = document.getElementById('overlayTitle');
+  const overlaySub = document.getElementById('overlaySub');
+
+  function cloneState(s){
+    return { human: s.human.slice(), ai: s.ai.slice() };
+  }
+
+  function isTerminal(s){
+    if(s.human[0]===0 && s.human[1]===0) return AI;
+    if(s.ai[0]===0 && s.ai[1]===0) return HUMAN;
+    return null;
+  }
+
+  function generateMoves(s, owner, opponent){
+    const moves = [];
+    const own = s[owner];
+    for(let i=0;i<2;i++){
+      if(own[i] <= 0) continue;
+      const addVal = own[i];
+      // own other hand
+      const otherIdx = i===0?1:0;
+      if(own[otherIdx] > 0){
+        moves.push({type:'attack', fromIndex:i, toOwner: owner, toIndex: otherIdx});
+      }
+      // opponent hands
+      const opp = s[opponent];
+      for(let j=0;j<2;j++){
+        if(opp[j] > 0){
+          moves.push({type:'attack', fromIndex:i, toOwner: opponent, toIndex:j});
+        }
+      }
+    }
+    const aliveIdx = [0,1].filter(i => own[i] > 0);
+    if(aliveIdx.length === 1){
+      const v = own[aliveIdx[0]];
+      if(v >= 2 && v % 2 === 0){
+        moves.push({type:'split'});
+      }
+    }
+    return moves;
+  }
+
+  function applyMove(s, owner, move){
+    const ns = cloneState(s);
+    if(move.type === 'attack'){
+      const addVal = ns[owner][move.fromIndex];
+      let newVal = ns[move.toOwner][move.toIndex] + addVal;
+      if(newVal >= 5) newVal = 0;
+      ns[move.toOwner][move.toIndex] = newVal;
+    } else if(move.type === 'split'){
+      const own = ns[owner];
+      const aliveIdx = [0,1].filter(i => own[i] > 0);
+      const idx = aliveIdx[0];
+      const total = own[idx];
+      const half = total / 2;
+      const otherIdx = idx === 0 ? 1 : 0;
+      own[idx] = half;
+      own[otherIdx] = half;
+    }
+    return ns;
+  }
+
+  function heuristic(s){
+    const aliveHuman = s.human.filter(v=>v>0).length;
+    const aliveAi = s.ai.filter(v=>v>0).length;
+    let score = (aliveAi - aliveHuman) * 15;
+    // slight preference for ai hands not sitting at dangerous totals (4, or equal to opp hands)
+    s.ai.forEach(v=>{ if(v===4) score -= 2; });
+    s.human.forEach(v=>{ if(v===4) score += 1; });
+    return score;
+  }
+
+  function minimax(s, depth, isAiTurn, alpha, beta){
+    const winner = isTerminal(s);
+    if(winner === AI) return 1000 + depth;
+    if(winner === HUMAN) return -1000 - depth;
+    if(depth === 0) return heuristic(s);
+
+    const owner = isAiTurn ? AI : HUMAN;
+    const opponent = isAiTurn ? HUMAN : AI;
+    const moves = generateMoves(s, owner, opponent);
+    if(moves.length === 0) return heuristic(s);
+
+    if(isAiTurn){
+      let value = -Infinity;
+      for(const m of moves){
+        const ns = applyMove(s, owner, m);
+        const val = minimax(ns, depth-1, false, alpha, beta);
+        if(val > value) value = val;
+        if(value > alpha) alpha = value;
+        if(alpha >= beta) break;
+      }
+      return value;
+    } else {
+      let value = Infinity;
+      for(const m of moves){
+        const ns = applyMove(s, owner, m);
+        const val = minimax(ns, depth-1, true, alpha, beta);
+        if(val < value) value = val;
+        if(value < beta) beta = value;
+        if(alpha >= beta) break;
+      }
+      return value;
+    }
+  }
+
+  function aiChooseMove(s){
+    const moves = generateMoves(s, AI, HUMAN);
+    const cfg = DIFFICULTY_CONFIG[difficulty];
+
+    if(cfg.randomChance > 0 && Math.random() < cfg.randomChance){
+      return moves[Math.floor(Math.random() * moves.length)];
+    }
+
+    let bestVal = -Infinity;
+    let bestMoves = [];
+    const DEPTH = cfg.depth;
+    for(const m of moves){
+      const ns = applyMove(s, AI, m);
+      const val = minimax(ns, DEPTH-1, false, -Infinity, Infinity);
+      if(val > bestVal){
+        bestVal = val;
+        bestMoves = [m];
+      } else if(val === bestVal){
+        bestMoves.push(m);
+      }
+    }
+    return bestMoves[Math.floor(Math.random()*bestMoves.length)];
+  }
+
+  // ---------- Rendering ----------
+
+  function renderHand(owner, idx){
+    const el = document.getElementById(owner + '-' + idx);
+    const val = state[owner][idx];
+    const dotsEl = el.querySelector('.dots');
+    const countEl = el.querySelector('.count-label');
+    dotsEl.innerHTML = '';
+    if(val <= 0){
+      el.classList.add('dead');
+    } else {
+      el.classList.remove('dead');
+      for(let k=0;k<val;k++){
+        const d = document.createElement('div');
+        d.className = 'dot';
+        d.style.setProperty('--dot-color', owner === HUMAN ? 'var(--p1)' : 'var(--p2)');
+        dotsEl.appendChild(d);
+      }
+      countEl.textContent = val + (val===1 ? ' finger' : ' fingers');
+    }
+    el.classList.remove('selectable','attacker-selected','valid-target');
+  }
+
+  function renderAll(){
+    renderHand(HUMAN,0); renderHand(HUMAN,1);
+    renderHand(AI,0); renderHand(AI,1);
+    humanSide.classList.toggle('active-turn', turn===HUMAN && !gameOver);
+    aiSide.classList.toggle('active-turn', turn===AI && !gameOver);
+    humanSide.style.setProperty('--turn-color', 'var(--p1)');
+    aiSide.style.setProperty('--turn-color', 'var(--p2)');
+  }
+
+  function setStatus(text){
+    statusBar.innerHTML = text;
+  }
+
+  function renderActions(){
+    actionsEl.innerHTML = '';
+    if(gameOver || turn !== HUMAN || inputLocked) return;
+
+    const moves = generateMoves(state, HUMAN, AI);
+    const canSplit = moves.some(m => m.type === 'split');
+
+    if(canSplit){
+      const btn = document.createElement('button');
+      btn.className = 'btn-split';
+      btn.textContent = 'Split evenly between hands';
+      btn.onclick = () => doHumanMove({type:'split'});
+      actionsEl.appendChild(btn);
+    }
+
+    if(selectedAttacker !== null){
+      const cancel = document.createElement('button');
+      cancel.className = 'btn-cancel';
+      cancel.textContent = 'Cancel selection';
+      cancel.onclick = () => { selectedAttacker = null; updateSelectionUI(); };
+      actionsEl.appendChild(cancel);
+    }
+  }
+
+  function updateSelectionUI(){
+    renderAll();
+    renderActions();
+    if(gameOver || turn !== HUMAN || inputLocked){
+      setStatus(turn===HUMAN ? "Your move — tap one of your hands to attack with." : "Computer is thinking&hellip;");
+      return;
+    }
+
+    // mark selectable attacker hands
+    [0,1].forEach(i => {
+      const el = document.getElementById('human-'+i);
+      if(state.human[i] > 0){
+        el.classList.add('selectable');
+        el.onclick = () => onHumanHandClick(i);
+      } else {
+        el.onclick = null;
+      }
+    });
+
+    if(selectedAttacker === null){
+      setStatus('Your move — tap one of your hands to attack with.');
+      document.getElementById('human-0').onclick = () => onHumanHandClick(0);
+      document.getElementById('human-1').onclick = () => onHumanHandClick(1);
+      // clear any target click handlers on ai hands
+      [0,1].forEach(j=>{ document.getElementById('ai-'+j).onclick = null; });
+    } else {
+      document.getElementById('human-'+selectedAttacker).classList.add('attacker-selected');
+      const addVal = state.human[selectedAttacker];
+      setStatus('Attacking with <span class="accent">'+addVal+'</span> finger'+(addVal===1?'':'s')+' — tap a hand to add to.');
+
+      // valid targets: own other hand if alive, opponent alive hands
+      const otherIdx = selectedAttacker === 0 ? 1 : 0;
+      if(state.human[otherIdx] > 0){
+        const el = document.getElementById('human-'+otherIdx);
+        el.classList.add('valid-target');
+        el.onclick = () => doHumanMove({type:'attack', fromIndex:selectedAttacker, toOwner:HUMAN, toIndex:otherIdx});
+      }
+      [0,1].forEach(j=>{
+        const el = document.getElementById('ai-'+j);
+        if(state.ai[j] > 0){
+          el.classList.add('valid-target');
+          el.onclick = () => doHumanMove({type:'attack', fromIndex:selectedAttacker, toOwner:AI, toIndex:j});
+        } else {
+          el.onclick = null;
+        }
+      });
+    }
+  }
+
+  function onHumanHandClick(i){
+    if(gameOver || turn !== HUMAN || inputLocked) return;
+    if(selectedAttacker === i){
+      selectedAttacker = null;
+    } else {
+      selectedAttacker = i;
+    }
+    updateSelectionUI();
+  }
+
+  async function doHumanMove(move){
+    if(gameOver || turn !== HUMAN || inputLocked) return;
+    inputLocked = true;
+
+    // stop any further taps while this move plays out
+    [0,1].forEach(i=>{
+      document.getElementById('human-'+i).onclick = null;
+      document.getElementById('ai-'+i).onclick = null;
+    });
+
+    if(move.type === 'split'){
+      const aliveIdx = [0,1].find(i => state.human[i] > 0);
+      const deadIdx = aliveIdx === 0 ? 1 : 0;
+      const aliveEl = document.getElementById('human-'+aliveIdx);
+      const deadEl = document.getElementById('human-'+deadIdx);
+      const arrow = drawArrow(aliveEl, deadEl, 'human');
+      await wait(550);
+      state = applyMove(state, HUMAN, move);
+      selectedAttacker = null;
+      renderAll();
+      renderActions();
+      removeArrow(arrow);
+    } else {
+      const fromEl = document.getElementById('human-'+move.fromIndex);
+      const targetEl = document.getElementById(move.toOwner+'-'+move.toIndex);
+      const arrow = drawArrow(fromEl, targetEl, 'human');
+      await wait(550);
+
+      state = applyMove(state, HUMAN, move);
+      const becameDead = state[move.toOwner][move.toIndex] === 0;
+      selectedAttacker = null;
+      renderAll();
+      renderActions();
+      removeArrow(arrow);
+
+      targetEl.classList.add('target-flash');
+      if(becameDead) targetEl.classList.add('shake');
+      setTimeout(() => targetEl.classList.remove('target-flash','shake'), 700);
+    }
+
+    const winner = isTerminal(state);
+    if(winner){
+      endGame(winner);
+      return;
+    }
+
+    turn = AI;
+    playAiTurn();
+  }
+
+  const HAND_NAME = ['left', 'right'];
+
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const arrowSvg = document.getElementById('arrowLayer');
+  const arrowGroup = document.getElementById('arrowGroup');
+
+  function drawArrow(fromEl, toEl, kind){
+    arrowSvg.setAttribute('width', window.innerWidth);
+    arrowSvg.setAttribute('height', window.innerHeight);
+
+    const r1 = fromEl.getBoundingClientRect();
+    const r2 = toEl.getBoundingClientRect();
+    const x1 = r1.left + r1.width/2;
+    const y1 = r1.top + r1.height/2;
+    const x2 = r2.left + r2.width/2;
+    const y2 = r2.top + r2.height/2;
+    const sameSide = fromEl.closest('.side') === toEl.closest('.side');
+    const bow = sameSide ? -46 : (y2 > y1 ? 0 : 0);
+    const mx = (x1 + x2) / 2 + (sameSide ? 0 : (x2 - x1) * 0.12);
+    const my = (y1 + y2) / 2 + bow;
+
+    const color = 'rgba(180,178,190,0.65)';
+    const marker = kind === 'ai' ? 'url(#arrowhead-ai)' : 'url(#arrowhead-human)';
+
+    const path = document.createElementNS(svgNS, 'path');
+    path.setAttribute('d', `M ${x1} ${y1} Q ${mx} ${my} ${x2} ${y2}`);
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke', color);
+    path.setAttribute('stroke-width', '2.5');
+    path.setAttribute('stroke-linecap', 'round');
+    path.setAttribute('marker-end', marker);
+    path.setAttribute('stroke-dasharray', '0.5 7');
+    path.classList.add('attack-arrow');
+    path.style.opacity = '0';
+    arrowGroup.appendChild(path);
+
+    // force reflow so the opacity transition actually animates in
+    path.getBoundingClientRect();
+    path.style.transition = 'opacity 0.25s ease';
+    path.style.opacity = '1';
+
+    return path;
+  }
+
+  function removeArrow(path){
+    if(!path) return;
+    path.style.transition = 'opacity 0.35s ease';
+    path.style.opacity = '0';
+    setTimeout(() => path.remove(), 350);
+  }
+
+  function wait(ms){ return new Promise(res => setTimeout(res, ms)); }
+
+  async function playAiTurn(){
+    setStatus('Computer is thinking&hellip;');
+    await wait(700);
+
+    const aiMove = aiChooseMove(state);
+
+    if(aiMove.type === 'split'){
+      const aliveIdx = [0,1].find(i => state.ai[i] > 0);
+      const deadIdx = aliveIdx === 0 ? 1 : 0;
+      const aiHandEl = document.getElementById('ai-'+aliveIdx);
+      const deadHandEl = document.getElementById('ai-'+deadIdx);
+      aiHandEl.classList.add('attacker-selected-ai');
+      setStatus('Computer splits its <span class="accent">'+HAND_NAME[aliveIdx]+'</span> hand evenly.');
+      const arrow = drawArrow(aiHandEl, deadHandEl, 'ai');
+      await wait(900);
+      state = applyMove(state, AI, aiMove);
+      renderAll();
+      aiHandEl.classList.remove('attacker-selected-ai');
+      removeArrow(arrow);
+      await wait(500);
+    } else {
+      const fromEl = document.getElementById('ai-'+aiMove.fromIndex);
+      const targetEl = document.getElementById(aiMove.toOwner+'-'+aiMove.toIndex);
+      fromEl.classList.add('attacker-selected-ai');
+      const fromCount = state.ai[aiMove.fromIndex];
+      const targetOwnerName = aiMove.toOwner === AI ? 'its' : 'your';
+      setStatus('Computer attacks with its <span class="accent">'+HAND_NAME[aiMove.fromIndex]+'</span> hand ('+fromCount+' finger'+(fromCount===1?'':'s')+') targeting '+targetOwnerName+' <span class="accent">'+HAND_NAME[aiMove.toIndex]+'</span> hand&hellip;');
+      const arrow = drawArrow(fromEl, targetEl, 'ai');
+      await wait(1100);
+
+      state = applyMove(state, AI, aiMove);
+      const becameDead = state[aiMove.toOwner][aiMove.toIndex] === 0;
+      renderAll();
+      fromEl.classList.remove('attacker-selected-ai');
+      removeArrow(arrow);
+      targetEl.classList.add('target-flash');
+      if(becameDead) targetEl.classList.add('shake');
+
+      if(becameDead){
+        setStatus('Knockout! '+(aiMove.toOwner===AI ? "The computer's" : 'Your')+' <span class="accent">'+HAND_NAME[aiMove.toIndex]+'</span> hand is out.');
+      } else {
+        setStatus('Computer adds '+fromCount+' finger'+(fromCount===1?'':'s')+' to '+targetOwnerName+' <span class="accent">'+HAND_NAME[aiMove.toIndex]+'</span> hand.');
+      }
+      await wait(900);
+      targetEl.classList.remove('target-flash','shake');
+    }
+
+    const w2 = isTerminal(state);
+    if(w2){
+      endGame(w2);
+      return;
+    }
+    turn = HUMAN;
+    inputLocked = false;
+    updateSelectionUI();
+  }
+
+  function endGame(winner){
+    gameOver = true;
+    renderAll();
+    renderActions();
+    if(winner === HUMAN){
+      wins++;
+      winCountEl.textContent = wins;
+      overlayTitle.textContent = 'You win!';
+      overlaySub.textContent = "Both of the computer's hands are out.";
+    } else {
+      losses++;
+      lossCountEl.textContent = losses;
+      overlayTitle.textContent = 'Computer wins';
+      overlaySub.textContent = 'Both of your hands are out. Rematch?';
+    }
+    overlay.classList.add('show');
+    setStatus(winner === HUMAN ? 'You win! 🎉' : 'Computer wins this round.');
+  }
+
+  difficultySegmented.querySelectorAll('.seg-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      difficulty = btn.dataset.difficulty;
+      difficultySegmented.querySelectorAll('.seg-btn').forEach(b => b.classList.toggle('active', b === btn));
+    });
+  });
+
+  resetTallyBtn.addEventListener('click', () => {
+    wins = 0;
+    losses = 0;
+    winCountEl.textContent = '0';
+    lossCountEl.textContent = '0';
+  });
+
+  document.getElementById('playAgainBtn').onclick = () => {
+    state = { human:[1,1], ai:[1,1] };
+    turn = HUMAN;
+    selectedAttacker = null;
+    gameOver = false;
+    inputLocked = false;
+    overlay.classList.remove('show');
+    updateSelectionUI();
+  };
+
+  updateSelectionUI();
+})();
+</script>
+</body>
+</html>
